@@ -5,6 +5,16 @@ from threading import Thread
 SERVER_HOST = "0.0.0.0"
 SERVER_PORT = 5002 # port we want to use
 separator_token = "<SEP>" # we will use this to separate the client name & message
+OPCODE_KEEP_ALIVE = 0
+OPCODE_SET_USERNAME = 1
+OPCODE_CREATE_ROOM = 2
+OPCODE_LIST_ROOMS = 3
+OPCODE_JOIN_ROOM = 4
+OPCODE_LEAVE_ROOM = 5
+OPCODE_SEND_MESSAGE = 6
+OPCODE_LIST_ROOMS_RESP = 7
+OPCODE_BROADCAST_MESSAGE = 8
+OPCODE_ILLEGAL_OPCODE = -99
 
 # initialize list/set of all connected client's sockets
 client_sockets = set()
@@ -26,20 +36,44 @@ def listen_for_client(cs):
     while True:
         try:
             # keep listening for a message from `cs` socket
-            msg = cs.recv(1024).decode()
+            data = cs.recv(1024).decode()
         except Exception as e:
             # client no longer connected
             # remove it from the set
             print(f"[!] Error: {e}")
             client_sockets.remove(cs)
         else:
-            # if we received a message, replace the <SEP> 
-            # token with ": " for nice printing
-            msg = msg.replace(separator_token, ": ")
-        # iterate over all connected sockets
-        for client_socket in client_sockets:
-            # and send the message
-            client_socket.send(msg.encode())
+            #if we received a message, parse opcode
+            x = data.split(separator_token, 1)
+            try:
+                opcode = int(x[0])
+            except ValueError:
+                opcode = OPCODE_ILLEGAL_OPCODE
+            if len(x) > 1:
+                msg = x[1]
+
+            if (opcode == OPCODE_KEEP_ALIVE):
+                pass
+            elif opcode == OPCODE_SET_USERNAME:
+                pass
+            elif opcode == OPCODE_CREATE_ROOM:
+                pass
+            elif opcode == OPCODE_LIST_ROOMS:
+                pass
+            elif opcode == OPCODE_JOIN_ROOM:
+                pass
+            elif opcode == OPCODE_LEAVE_ROOM:
+                pass
+            elif opcode == OPCODE_SEND_MESSAGE: # send message
+                # replace the <SEP> 
+                # token with ": " for nice printing
+                msg = msg.replace(separator_token, ": ")
+                # iterate over all connected sockets
+                for client_socket in client_sockets:
+                    # and send the message
+                    client_socket.send(msg.encode())
+            elif opcode == OPCODE_ILLEGAL_OPCODE:
+                pass #maybe kick the offending client
 
 while True:
     # we keep listening for new connections all the time
