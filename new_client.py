@@ -1,3 +1,4 @@
+from os import sep
 import socket
 import random
 import time
@@ -39,7 +40,6 @@ OPCODE_ERROR_MESSAGE = -1
 # we will send this address with any message we send
 my_address = "no address"
 
-
 # declare TCP socket
 s = socket.socket()
 
@@ -48,6 +48,7 @@ def listen_for_messages():
     global my_address
     while True:
         message = s.recv(1024).decode()
+        print(message)
 
         # parse opcode
         x = message.split(separator_token)
@@ -67,7 +68,7 @@ def listen_for_messages():
             to_send = f"{OPCODE_SET_USERNAME}{separator_token}{my_address}"\
                 f"{separator_token}{name}"
             s.send(to_send.encode())
-        # if a chat message is being sent
+        # if a chat or message is being sent
         elif(opcode == OPCODE_BROADCAST_MESSAGE):
             print(message)
         # if an error
@@ -137,7 +138,7 @@ while True:
                 to_send = f"{OPCODE_JOIN_ROOM}{separator_token}{my_address}"\
                     f"{separator_token}{x[1]}"
             else:
-                # respond error
+                print("\t<Error: wrong number of arguments>")
                 continue
 
         # if the user wants to create a room
@@ -150,8 +151,13 @@ while True:
             else:
                 # respond error
                 continue
+
+        # if the user wants to list all rooms
+        elif(to_send.startswith('/list')):
+            to_send = f"{OPCODE_LIST_ROOMS}{separator_token}{my_address}"\
+                f"{separator_token}blank"
         else:
-            print('Invalid command!')
+            print('\t<Error: invalid command!>')
             continue
 
         
