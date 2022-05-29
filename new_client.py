@@ -32,18 +32,51 @@ OPCODE_LEAVE_ROOM = 5
 OPCODE_SEND_MESSAGE = 6
 OPCODE_LIST_ROOMS_RESP = 7
 OPCODE_BROADCAST_MESSAGE = 8
+OPCODE_CLIENT_ID = 9
+
+# server will send us an address
+# we will send this address with any message we send
+my_address = "no address"
+
 
 # declare TCP socket
 s = socket.socket()
 
+
 def listen_for_messages():
+    global my_address
     while True:
         message = s.recv(1024).decode()
-        print("\n" + message)
+
+        # parse opcode
+        x = message.split(separator_token)
+
+        # if no opcode (socket connection message)
+        if(len(x) == 1):
+            print(message)
+            continue
+        print(message + 't')
+        # if we have an opcode
+        opcode = int(x[0])
+        message = x[1]
+
+        # if the server is sending us our client ID
+        if(opcode == OPCODE_CLIENT_ID):
+            my_address = message
+            # send back our username so server can link it to client ID
+            to_send = f"{OPCODE_SET_USERNAME}{separator_token}{my_address}"\
+                f"{separator_token}{name}"
+            s.send(to_send.encode())
+        # if a chat message is being sent
+        elif(opcode == OPCODE_BROADCAST_MESSAGE):
+            print(message)
 
 def keepalive(period):
-    payload = f"{OPCODE_KEEP_ALIVE}{separator_token}'keepalive'"
+    #payload = f"{OPCODE_KEEP_ALIVE}{separator_token}"\
+    #    f"{my_address}{separator_token}'keepalive'"
     while True:
+        payload = f"{OPCODE_KEEP_ALIVE}{separator_token}"\
+            f"{my_address}{separator_token}'keepalive'"
         s.send(payload.encode())
         time.sleep(period)
 
@@ -55,9 +88,6 @@ print("[+] Connected.")
 
 # require user name before sending messages
 name = input("Enter your name: ")
-to_send = f"{OPCODE_SET_USERNAME}{separator_token}{name}"
-s.send(to_send.encode())
-
 
 # make a thread that listens for messages to this client & print them
 t = Thread(target=listen_for_messages)
@@ -75,17 +105,42 @@ tk.start()
 
 while True:
     # input message we want to send to the server
-    to_send =  input()
+    to_send = input()
 
     # if a message starts with '/', it's a command
     if len(to_send) > 0 and to_send[0] == '/':
+
         # if the client wants to leave the room
         if(to_send == '/leave'):
             date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            to_send = f"{OPCODE_LEAVE_ROOM}{separator_token}{date_now}{separator_token}{name}"
+            to_send = f"{OPCODE_LEAVE_ROOM}{separator_token}{my_address}"\
+                f"{separator_token}{date_now}{separator_token}{name}"
+
+        # if the client wants to join a room
+        elif(to_send.startswith('/join')):
+            # what comes after /join is the room name
+            x = to_send.split()
+            if(len(x) == 2):
+                to_send = f"{OPCODE_JOIN_ROOM}{separator_token}{my_address}"\
+                    f"{separator_token}{x[1]}"
+            else:
+                # respond error
+                continue
+
+        # if the user wants to create a room
+        elif(to_send.startswith('/create')):
+            # what comes after /create is the room name
+            x = to_send.split()
+            if(len(x) == 2):
+                to_send = f"{OPCODE_CREATE_ROOM}{separator_token}{my_address}"\
+                    f"{separator_token}{x[1]}"
+            else:
+                # respond error
+                continue
         else:
             print('Invalid command!')
             continue
+
         
     elif to_send.lower().startswith('nick'):
         x = to_send.split(' ')
@@ -97,8 +152,9 @@ while True:
     else:
         # add the datetime, name & the color of the sender
         date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
-        to_send = f"{OPCODE_SEND_MESSAGE}{separator_token}{client_color}[{date_now}] \
-        {name}{separator_token}{to_send}{Fore.RESET}"
+        to_send = f"{OPCODE_SEND_MESSAGE}{separator_token}{my_address}" \
+        f"{separator_token}{client_color}[{date_now}]" \
+        f"{name}{separator_token}{to_send}{Fore.RESET}"
     # finally, send the message
     s.send(to_send.encode())
 

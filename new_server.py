@@ -14,10 +14,22 @@ OPCODE_LEAVE_ROOM = 5
 OPCODE_SEND_MESSAGE = 6
 OPCODE_LIST_ROOMS_RESP = 7
 OPCODE_BROADCAST_MESSAGE = 8
+OPCODE_CLIENT_ID = 9
 OPCODE_ILLEGAL_OPCODE = -99
 
+
+# info about each of the connected client's
+# key is address
+# [0] = client socket
+# [1] = client username
+# [2] = current room
+client_info = {}
+
+"""
 # initialize list/set of all connected client's sockets
 client_sockets = set()
+"""
+
 # create a TCP socket
 s = socket.socket()
 # make the port as reusable port
@@ -41,48 +53,105 @@ def listen_for_client(cs):
             # client no longer connected
             # remove it from the set
             print(f"[!] Error: {e}")
-            client_sockets.remove(cs)
+            #client_sockets.remove(cs)
         else:
-            #if we received a message, parse opcode
-            x = data.split(separator_token, 1)
+            #if we received a message, parse opcode and sender address
+            x = data.split(separator_token, 2)
+            print(x)
+            if(len(x) < 3):
+                # too few args, respond with error
+                continue
             try:
                 opcode = int(x[0])
+                client_address = x[1]
+                msg = x[2]
             except ValueError:
                 opcode = OPCODE_ILLEGAL_OPCODE
-            if len(x) > 1:
-                msg = x[1]
-
+            # make sure sender address exists
+            if(client_address not in client_info):
+                # respond error
+                continue
             if (opcode == OPCODE_KEEP_ALIVE):
                 pass
             elif opcode == OPCODE_SET_USERNAME:
                 pass
             elif opcode == OPCODE_CREATE_ROOM:
-                pass
+                # make sure the user is not in a room
+                if(client_info[client_address][2] != None):
+                    # respond error
+                    continue
+
+                # check that the room name (msg) isn't occupied
+                unique = True
+                for client in client_info:
+                    if(client_info[client][2] == msg):
+                        unique = False
+                        break
+                if(not unique):
+                    # respond error message
+                    continue
+                
+                # if all good, allow them to create room
+                client_info[client_address][2] = msg
+                # respond OK message
+
             elif opcode == OPCODE_LIST_ROOMS:
                 pass
+
+            # if the user wants to join a room
             elif opcode == OPCODE_JOIN_ROOM:
-                pass
+                # make sure the user is not in a room
+                if(client_info[client_address][2] != None):
+                    # respond error
+                    continue
+
+                # make sure the room (msg) exists
+                # note: we will need to create a list in the future
+                # instead of seeing each person's room
+                exists = False
+                for client in client_info:
+                    if(client_info[client][2] == msg):
+                        exists = True
+                        break
+                if(not exists):
+                    # respond error message
+                    continue
+
+                # otherwise allow them to join room
+                client_info[client_address][2] = msg    
+
             elif opcode == OPCODE_LEAVE_ROOM:
                 # split to retrieve other fields
-                x = data.split(separator_token)
-                # if wrong number of args
-                if(len(x) != 3):
-                    # return error
-                    continue
-                #otherwise we will handle the leave room
-                #
-                #notify chat room about the user leaving the room
-                for client_socket in client_sockets:
-                    client_socket.send((f"{x[1]}: <{x[2]} has left the chat room>").encode())
+                leave_info = msg.split(separator_token)
+                
+                # remove client from room
+                room_name = client_info[client_address][2]
+                client_info[client_address][2] = None
+
+                # if the client was actually in a room
+                if(room_name != None):
+                    leave_msg = f"<{client_info[client_address][1]} left the room>"
+                    #notify chat room about the client leaving the room
+                    for client in client_info:
+                        if(client[2] == room_name):
+                            client[0].send(msg.encode())
 
             elif opcode == OPCODE_SEND_MESSAGE: # send message
                 # replace the <SEP> 
                 # token with ": " for nice printing
                 msg = msg.replace(separator_token, ": ")
-                # iterate over all connected sockets
-                for client_socket in client_sockets:
-                    # and send the message
-                    client_socket.send(msg.encode())
+
+                # room name of the client sending the message
+                room_name = client_info[client_address][2]
+                # if they are not in a room, ignore
+                if(room_name == None):
+                    continue
+
+                # send message to clients in same room
+                for client in client_info:
+                    # if the client is in the same room
+                    if(client_info[client][2] == room_name):
+                        client_info[client][0].send(msg.encode())
             elif opcode == OPCODE_ILLEGAL_OPCODE:
                 pass #maybe kick the offending client
 
@@ -90,8 +159,17 @@ while True:
     # we keep listening for new connections all the time
     client_socket, client_address = s.accept()
     print(f"[+] {client_address} connected.")
-    # add the new connected client to connected sockets
-    client_sockets.add(client_socket)
+
+    # add the new connected client to list of users
+    client_address = str(client_address)
+    if(client_address not in client_info):
+        print(client_socket)
+        client_info[client_address] = [client_socket, 'Unnamed user', None]
+
+    # send a message back with assigned client ID (just the client_address)
+    msg = f"{OPCODE_CLIENT_ID}{separator_token}{client_address}"
+    client_socket.send(msg.encode())
+
     # start a new thread that listens for each client's messages
     t = Thread(target=listen_for_client, args=(client_socket,))
     # make the thread daemon so it ends whenever the main thread ends
