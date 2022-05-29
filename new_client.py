@@ -83,6 +83,14 @@ def keepalive(period):
         s.send(payload.encode())
         time.sleep(period)
 
+def show_uses():
+    print("\nWelcome to the chat room app!\n")
+    print("\tTo join a room: /join <room name>")
+    print("\tTo list rooms: /list")
+    print("\tTo create room: /create <room name>")
+    print("\tTo leave room: /leave")
+    print()
+
 # initialize TCP socket
 print(f"[*] Connecting to {SERVER_HOST}:{SERVER_PORT}...")
 # connect to the server
@@ -105,6 +113,8 @@ tk = Thread(target=keepalive, args=(KEEP_ALIVE_INTERVAL,))
 tk.daemon = True
 # start the thread
 tk.start()
+
+show_uses() # tell user how to use the chat room app
 
 while True:
     # input message we want to send to the server
