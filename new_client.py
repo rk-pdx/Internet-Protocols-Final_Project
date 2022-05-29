@@ -33,6 +33,7 @@ OPCODE_SEND_MESSAGE = 6
 OPCODE_LIST_ROOMS_RESP = 7
 OPCODE_BROADCAST_MESSAGE = 8
 OPCODE_CLIENT_ID = 9
+OPCODE_ERROR_MESSAGE = -1
 
 # server will send us an address
 # we will send this address with any message we send
@@ -55,7 +56,6 @@ def listen_for_messages():
         if(len(x) == 1):
             print(message)
             continue
-        print(message + 't')
         # if we have an opcode
         opcode = int(x[0])
         message = x[1]
@@ -69,6 +69,9 @@ def listen_for_messages():
             s.send(to_send.encode())
         # if a chat message is being sent
         elif(opcode == OPCODE_BROADCAST_MESSAGE):
+            print(message)
+        # if an error
+        elif(opcode == OPCODE_ERROR_MESSAGE):
             print(message)
 
 def keepalive(period):
@@ -153,7 +156,7 @@ while True:
         # add the datetime, name & the color of the sender
         date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
         to_send = f"{OPCODE_SEND_MESSAGE}{separator_token}{my_address}" \
-        f"{separator_token}{client_color}[{date_now}]" \
+        f"{separator_token}{client_color}[{date_now}] "\
         f"{name}{separator_token}{to_send}{Fore.RESET}"
     # finally, send the message
     s.send(to_send.encode())
