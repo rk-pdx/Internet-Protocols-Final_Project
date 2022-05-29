@@ -33,15 +33,8 @@ OPCODE_SEND_MESSAGE = 6
 OPCODE_LIST_ROOMS_RESP = 7
 OPCODE_BROADCAST_MESSAGE = 8
 
-
-# initialize TCP socket
+# declare TCP socket
 s = socket.socket()
-print(f"[*] Connecting to {SERVER_HOST}:{SERVER_PORT}...")
-# connect to the server
-s.connect((SERVER_HOST, SERVER_PORT))
-print("[+] Connected.")
-
-name = input("Enter your name: ")
 
 def listen_for_messages():
     while True:
@@ -53,6 +46,18 @@ def keepalive(period):
     while True:
         s.send(payload.encode())
         time.sleep(period)
+
+# initialize TCP socket
+print(f"[*] Connecting to {SERVER_HOST}:{SERVER_PORT}...")
+# connect to the server
+s.connect((SERVER_HOST, SERVER_PORT))
+print("[+] Connected.")
+
+# require user name before sending messages
+name = input("Enter your name: ")
+to_send = f"{OPCODE_SET_USERNAME}{separator_token}{name}"
+s.send(to_send.encode())
+
 
 # make a thread that listens for messages to this client & print them
 t = Thread(target=listen_for_messages)
@@ -74,6 +79,11 @@ while True:
     # a way to exit the program
     if to_send.lower() == 'q':
         break
+    elif to_send.lower().startswith('nick'):
+        x = to_send.split(' ')
+        if len(x) == 2:
+            name = x[1]
+            to_send = f"{OPCODE_SET_USERNAME}{separator_token}{name}"
     elif to_send.lower() == 'list':
         to_send = f"{OPCODE_LIST_ROOMS}{separator_token}list"
     else:
