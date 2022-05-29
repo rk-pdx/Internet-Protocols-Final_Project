@@ -11,4 +11,4 @@ msgText = "hello world"
 msgBytes = msgText.encode() #socket.send() doesn't accept raw strings
 s.send(msgBytes)
 print((s.recv(20)).decode())
-s.close
+s.close()

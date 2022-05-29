@@ -76,9 +76,17 @@ tk.start()
 while True:
     # input message we want to send to the server
     to_send =  input()
-    # a way to exit the program
-    if to_send.lower() == 'q':
-        break
+
+    # if a message starts with '/', it's a command
+    if len(to_send) > 0 and to_send[0] == '/':
+        # if the client wants to leave the room
+        if(to_send == '/leave'):
+            date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            to_send = f"{OPCODE_LEAVE_ROOM}{separator_token}{date_now}{separator_token}{name}"
+        else:
+            print('Invalid command!')
+            continue
+        
     elif to_send.lower().startswith('nick'):
         x = to_send.split(' ')
         if len(x) == 2:

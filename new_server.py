@@ -63,7 +63,18 @@ def listen_for_client(cs):
             elif opcode == OPCODE_JOIN_ROOM:
                 pass
             elif opcode == OPCODE_LEAVE_ROOM:
-                pass
+                # split to retrieve other fields
+                x = data.split(separator_token)
+                # if wrong number of args
+                if(len(x) != 3):
+                    # return error
+                    continue
+                #otherwise we will handle the leave room
+                #
+                #notify chat room about the user leaving the room
+                for client_socket in client_sockets:
+                    client_socket.send((f"{x[1]}: <{x[2]} has left the chat room>").encode())
+
             elif opcode == OPCODE_SEND_MESSAGE: # send message
                 # replace the <SEP> 
                 # token with ": " for nice printing
