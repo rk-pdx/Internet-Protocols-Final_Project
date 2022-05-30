@@ -35,6 +35,7 @@ OPCODE_LIST_ROOMS_RESP = 7
 OPCODE_BROADCAST_MESSAGE = 8
 OPCODE_CLIENT_ID = 9
 OPCODE_ERROR_MESSAGE = -1
+OPCODE_LIST_MEMBERS_ROOM = 11
 
 # server will send us an address
 # we will send this address with any message we send
@@ -46,10 +47,10 @@ s = socket.socket()
 
 def listen_for_messages():
     global my_address
+
     while True:
         message = s.recv(1024).decode()
-        print(message)
-
+        #print(message)
         # parse opcode
         x = message.split(separator_token)
 
@@ -74,6 +75,8 @@ def listen_for_messages():
         # if an error
         elif(opcode == OPCODE_ERROR_MESSAGE):
             print(message)
+        elif (opcode == OPCODE_LIST_MEMBERS_ROOM):
+            print(message)
 
 def keepalive(period):
     #payload = f"{OPCODE_KEEP_ALIVE}{separator_token}"\
@@ -90,6 +93,7 @@ def show_uses():
     print("\tTo list rooms: /list")
     print("\tTo create room: /create <room name>")
     print("\tTo leave room: /leave")
+    print("\tTo list members in a room: /l_members <room name>")
     print()
 
 # initialize TCP socket
@@ -123,13 +127,12 @@ while True:
 
     # if a message starts with '/', it's a command
     if len(to_send) > 0 and to_send[0] == '/':
-
         # if the client wants to leave the room
         if(to_send == '/leave'):
             date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             to_send = f"{OPCODE_LEAVE_ROOM}{separator_token}{my_address}"\
                 f"{separator_token}{date_now}{separator_token}{name}"
-
+                
         # if the client wants to join a room
         elif(to_send.startswith('/join')):
             # what comes after /join is the room name
@@ -156,6 +159,20 @@ while True:
         elif(to_send.startswith('/list')):
             to_send = f"{OPCODE_LIST_ROOMS}{separator_token}{my_address}"\
                 f"{separator_token}blank"
+        
+        # if the user wants to list all members in a specific room
+        elif (to_send.startswith('/l_members')): 
+            #print("HIT")
+            x = to_send.split()
+            if (len(x) == 2):
+                print(f"{x[1]}")
+                to_send = f"{OPCODE_LIST_MEMBERS_ROOM}{separator_token}{my_address}"\
+                    f"{separator_token}{x[1]}"
+            else:
+                print("Error: The message needs to contain a room name..")
+                continue
+
+
         else:
             print('\t<Error: invalid command!>')
             continue
