@@ -17,6 +17,7 @@ OPCODE_BROADCAST_MESSAGE = 8
 OPCODE_CLIENT_ID = 9
 OPCODE_ERROR_MESSAGE = -1
 OPCODE_ILLEGAL_OPCODE = -99
+OPCODE_LIST_MEMBERS_ROOM = 11
 
 
 # info about each of the connected client's
@@ -137,7 +138,7 @@ def listen_for_client(cs):
                         "\t<Error: you are already in a room>"
                     client_info[client_address][0].send(msg.encode())
                     continue
-
+                
                 # make sure the room (msg) exists
                 # note: we will need to create a list in the future
                 # instead of seeing each person's room
@@ -160,7 +161,6 @@ def listen_for_client(cs):
 
             # LEAVE ROOM
             elif opcode == OPCODE_LEAVE_ROOM:
-
                 # if client is not in a room
                 if(client_info[client_address][2] == None):
                     # respond error
@@ -193,6 +193,7 @@ def listen_for_client(cs):
 
             # SEND MESSAGE
             elif opcode == OPCODE_SEND_MESSAGE: # send message
+                #print("SENDING A MESSAGE")
                 # replace the <SEP> 
                 # token with ": " for nice printing
                 msg = msg.replace(separator_token, ": ")
@@ -219,6 +220,27 @@ def listen_for_client(cs):
             # ILLEGAL OPCODE
             elif opcode == OPCODE_ILLEGAL_OPCODE:
                 pass #maybe kick the offending client
+
+
+            # OPCODE_LIST_MEMBERS_ROOM
+            elif opcode == OPCODE_LIST_MEMBERS_ROOM:
+                #print("Hit OPCODE_LIST_MEMBERS_ROOM")
+                all_members_in_room = []
+                room_name = msg
+
+                for client in client_info:
+                    #print("Checking for client ")
+                    #print(client_info[client][1])
+
+                    if (client_info[client][2] == room_name):
+                        #print("Hit INTERIOR")
+                        all_members_in_room.append(client_info[client][1])
+                
+                lemsg = f"{OPCODE_BROADCAST_MESSAGE}{separator_token}"\
+                     f"\t<{all_members_in_room}"
+                client_info[client_address][0].send(lemsg.encode())
+
+
 
 while True:
     # we keep listening for new connections all the time
