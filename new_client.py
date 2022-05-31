@@ -36,6 +36,7 @@ OPCODE_BROADCAST_MESSAGE = 8
 OPCODE_CLIENT_ID = 9
 OPCODE_ERROR_MESSAGE = -1
 OPCODE_LIST_MEMBERS_ROOM = 11
+OPCODE_LIST_CURR_ROOMS = 12
 
 # server will send us an address
 # we will send this address with any message we send
@@ -171,6 +172,13 @@ while True:
             else:
                 print("Error: The message needs to contain a room name..")
                 continue
+
+        #OPCODE_LIST_CURR_ROOMS = 12
+        elif (to_send.startswith('/current_rooms')):
+            print("HIT")
+            to_send = f"{OPCODE_LIST_CURR_ROOMS}{separator_token}{my_address}"\
+                f"{separator_token}"
+            
 
 
         else:
