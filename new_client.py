@@ -37,6 +37,7 @@ OPCODE_CLIENT_ID = 9
 OPCODE_ERROR_MESSAGE = -1
 OPCODE_LIST_MEMBERS_ROOM = 11
 OPCODE_LIST_CURR_ROOMS = 12
+OPCODE_SEND_SPECIFIC = 13
 
 # server will send us an address
 # we will send this address with any message we send
@@ -95,7 +96,7 @@ def show_uses():
     print("\tTo create room: /create <room name>")
     print("\tTo leave room: /leave")
     print("\tTo list members in a room: /l_members <room name>")
-    print()
+    print("\tTo list the current rooms you are in: /current_rooms")
 
 # initialize TCP socket
 print(f"[*] Connecting to {SERVER_HOST}:{SERVER_PORT}...")
@@ -126,6 +127,7 @@ while True:
     # input message we want to send to the server
     to_send = input()
 
+
     # if a message starts with '/', it's a command
     if len(to_send) > 0 and to_send[0] == '/':
         # if the client wants to leave the room
@@ -134,6 +136,7 @@ while True:
             to_send = f"{OPCODE_LEAVE_ROOM}{separator_token}{my_address}"\
                 f"{separator_token}{date_now}{separator_token}{name}"
                 
+
         # if the client wants to join a room
         elif(to_send.startswith('/join')):
             # what comes after /join is the room name
@@ -144,6 +147,7 @@ while True:
             else:
                 print("\t<Error: wrong number of arguments>")
                 continue
+
 
         # if the user wants to create a room
         elif(to_send.startswith('/create')):
@@ -156,30 +160,48 @@ while True:
                 # respond error
                 continue
 
+
         # if the user wants to list all rooms
         elif(to_send.startswith('/list')):
             to_send = f"{OPCODE_LIST_ROOMS}{separator_token}{my_address}"\
                 f"{separator_token}blank"
         
+
         # if the user wants to list all members in a specific room
         elif (to_send.startswith('/l_members')): 
             #print("HIT")
             x = to_send.split()
             if (len(x) == 2):
-                print(f"{x[1]}")
                 to_send = f"{OPCODE_LIST_MEMBERS_ROOM}{separator_token}{my_address}"\
                     f"{separator_token}{x[1]}"
             else:
                 print("Error: The message needs to contain a room name..")
                 continue
 
-        #OPCODE_LIST_CURR_ROOMS = 12
+
+        #
+        # OPCODE_LIST_CURR_ROOMS = 12
+        #
         elif (to_send.startswith('/current_rooms')):
-            print("HIT")
             to_send = f"{OPCODE_LIST_CURR_ROOMS}{separator_token}{my_address}"\
                 f"{separator_token}"
-            
 
+
+        # 
+        # OPCODE_SEND_SPECIFIC = 13
+        #
+        elif (to_send.startswith('/send')):
+            x = to_send.split()
+            if (len(x) == 3):
+                #to_send = f"{OPCODE_SEND_SPECIFIC}{separator_token}{my_address}"\
+                #    f"{separator_token}{x[1]} {x[2]}"
+                date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
+                to_send = f"{OPCODE_SEND_SPECIFIC}{separator_token}{my_address}" \
+                f"{separator_token}{client_color}[{date_now}] "\
+                f"{name}{separator_token}{to_send}{Fore.RESET}"
+            else:
+                print("Error: To send a message, please type: '/send <room name> <message>.'")
+            
 
         else:
             print('\t<Error: invalid command!>')
