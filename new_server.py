@@ -18,6 +18,7 @@ OPCODE_CLIENT_ID = 9
 OPCODE_ERROR_MESSAGE = -1
 OPCODE_ILLEGAL_OPCODE = -99
 OPCODE_LIST_MEMBERS_ROOM = 11
+OPCODE_LIST_CURR_ROOMS = 12
 
 
 # info about each of the connected client's
@@ -91,24 +92,27 @@ def listen_for_client(cs):
             elif opcode == OPCODE_CREATE_ROOM:
                 room_name = msg
                 # make sure the user is not in a room
-                if(client_info[client_address][2] != None):
+                #if(client_info[client_address][2] != None):
                     # respond error
-                    msg = f"{OPCODE_ERROR_MESSAGE}{separator_token}"\
-                        "\t<Error: you are already in a room>"
-                    client_info[client_address][0].send(msg.encode())
-                    continue
+                #msg = f"{OPCODE_ERROR_MESSAGE}{separator_token}"\
+                #    "\t<Error: you are already in a room>"
+                #client_info[client_address][0].send(msg.encode())
+                #continue
 
                 # check that the room name isn't occupied
                 if(room_name in rooms_info):
                     # respond error
                     msg = f"{OPCODE_ERROR_MESSAGE}{separator_token}"\
-                        f"\t<Error: there's already a room with this name>"
+                        f"\t<Error: there's already a room with this name. Enter /join <room name> to join the room.>"
                     client_info[client_address][0].send(msg.encode())
                     continue
                 
                 # if all good, allow them to create room
                 rooms_info[room_name] = 1
-                client_info[client_address][2] = room_name
+                #client_info[client_address][2] = room_name
+                if (type(client_info[client_address][2]) != list):
+                    client_info[client_address][2] = list()    
+                client_info[client_address][2].append(room_name)
 
                 # send success message
                 msg = f"{OPCODE_BROADCAST_MESSAGE}{separator_token}"\
@@ -132,12 +136,12 @@ def listen_for_client(cs):
             elif opcode == OPCODE_JOIN_ROOM:
                 room_name = msg
                 # make sure the user is not in a room
-                if(client_info[client_address][2] != None):
+                #if(client_info[client_address][2] != None):
                     # respond error
-                    msg = f"{OPCODE_ERROR_MESSAGE}{separator_token}"\
-                        "\t<Error: you are already in a room>"
-                    client_info[client_address][0].send(msg.encode())
-                    continue
+                msg = f"{OPCODE_ERROR_MESSAGE}{separator_token}"\
+                     "\t<Error: you are already in a room>"
+                client_info[client_address][0].send(msg.encode())
+                #continue
                 
                 # make sure the room (msg) exists
                 # note: we will need to create a list in the future
@@ -149,7 +153,8 @@ def listen_for_client(cs):
                     continue
 
                 # otherwise allow them to join room
-                client_info[client_address][2] = room_name
+                #client_info[client_address][2] = room_name
+                client_info[client_address][2].append(room_name)
                 rooms_info[room_name] += 1 # increment number of users in room
 
                 # tell chat room about new client
@@ -221,7 +226,6 @@ def listen_for_client(cs):
             elif opcode == OPCODE_ILLEGAL_OPCODE:
                 pass #maybe kick the offending client
 
-
             # OPCODE_LIST_MEMBERS_ROOM
             elif opcode == OPCODE_LIST_MEMBERS_ROOM:
                 #print("Hit OPCODE_LIST_MEMBERS_ROOM")
@@ -239,6 +243,26 @@ def listen_for_client(cs):
                 lemsg = f"{OPCODE_BROADCAST_MESSAGE}{separator_token}"\
                      f"\t<{all_members_in_room}"
                 client_info[client_address][0].send(lemsg.encode())
+
+            # opcode: OPCODE_LIST_CURR_ROOMS
+            # purpose: Lists the current rooms that the user is in
+            #
+            elif opcode == OPCODE_LIST_CURR_ROOMS:
+                print("Hit OPCODE on Server")
+                if (client_info[client_address][2] == None):
+                    msg = f"{OPCODE_ERROR_MESSAGE}{separator_token}"\
+                        "\t<Error: you are not in any rooms.>\n"\
+                        "\t  Use '/join <room name>' to join a room\n"
+                    client_info[client_address][0].send(msg.encode())
+                else:
+                    curr_rooms = []
+                    for i in range(0, len(client_info[client_address][2])):
+                        curr_rooms.append(client_info[client_address][2][i])
+                    
+                    ret_msg = f"{OPCODE_BROADCAST_MESSAGE}{separator_token}"\
+                        f"\t<{curr_rooms}"
+                    client_info[client_address][0].send(ret_msg.encode())
+
 
 
 
