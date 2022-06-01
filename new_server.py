@@ -158,6 +158,9 @@ def listen_for_client(cs):
                 
                 client_info[client_address][2].append(room_name)
                 rooms_info[room_name] += 1 # increment number of users in room
+                msg = f"{OPCODE_BROADCAST_MESSAGE}{separator_token}"\
+                    "\tYou have successfully joined the room."
+                client_info[client_address][0].send(msg.encode())
 
                 # tell chat room about new client
                 join_msg = f"{OPCODE_BROADCAST_MESSAGE}{separator_token}"\
@@ -200,7 +203,6 @@ def listen_for_client(cs):
 
             # SEND MESSAGE
             elif opcode == OPCODE_SEND_MESSAGE: # send message
-                #print("SENDING A MESSAGE")
                 # replace the <SEP> 
                 # token with ": " for nice printing
                 msg = msg.replace(separator_token, ": ")
@@ -235,12 +237,10 @@ def listen_for_client(cs):
                 room_name = msg
 
                 for client in client_info:
-                    #print("Checking for client ")
-                    #print(client_info[client][1])
-
-                    if (client_info[client][2] == room_name):
-                        #print("Hit INTERIOR")
-                        all_members_in_room.append(client_info[client][1])
+                    if (client_info[client][2] != None):
+                        for j in range(0, len(client_info[client][2])):
+                            if (client_info[client][2][j] == room_name):
+                                all_members_in_room.append(client_info[client][1])
                 
                 lemsg = f"{OPCODE_BROADCAST_MESSAGE}{separator_token}"\
                      f"\t<{all_members_in_room}"
@@ -270,7 +270,9 @@ def listen_for_client(cs):
             #
             #
             elif opcode == OPCODE_SEND_SPECIFIC:
-                user_input = msg.split()
+                #msg = msg.replace(separator_token, ": ")
+
+                user_input = msg.split(" ",1)
                 room_name = "empty"
 
                 if (client_info[client_address][2] == None):
@@ -293,7 +295,7 @@ def listen_for_client(cs):
                 else:          
                     msg = user_input[1]
                     for client in client_info:
-                        for i in range(0, len(client_info[client][2])):
+                       for i in range(0, len(client_info[client][2])):
                             if (client_info[client][2][i] == room_name):
                                 client_info[client][0].send(msg.encode())
 
