@@ -196,9 +196,9 @@ while True:
                 #to_send = f"{OPCODE_SEND_SPECIFIC}{separator_token}{my_address}"\
                 #    f"{separator_token}{x[1]} {x[2]}"
                 date_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S') 
-                to_send = f"{OPCODE_SEND_SPECIFIC}{separator_token}{my_address}" \
-                f"{separator_token}{client_color}[{date_now}] "\
-                f"{name}{separator_token}{to_send}{Fore.RESET}"
+                to_send = f"{OPCODE_SEND_SPECIFIC}{separator_token}{my_address}{separator_token}" \
+                    f"{x[1]} {client_color}[{date_now}] "\
+                    f"{name} {x[1]} {x[2]}{Fore.RESET}"
             else:
                 print("Error: To send a message, please type: '/send <room name> <message>.'")
             
